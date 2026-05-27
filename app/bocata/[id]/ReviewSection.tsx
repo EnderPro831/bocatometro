@@ -141,7 +141,6 @@ export default function ReviewSection({ bocataId, bocataName, reviews: init }: R
       score_calidad_precio: form.score_total,
       score_tamano: form.score_total,
       score_destruccion: form.score_total,
-      score_total: form.score_total,
       eaten_at: form.eaten_at || null,
       price_paid: form.price_paid ? parseFloat(form.price_paid) : null,
       would_repeat: form.would_repeat,
