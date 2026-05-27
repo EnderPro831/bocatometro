@@ -80,7 +80,7 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem' }}>
-          {bocatas.map((bocata, i) => {
+          {bocatas.map((bocata: any, i: number) => {
             const score = Number(bocata.avg_score) || 0
             return (
               <Link key={bocata.id} href={`/bocata/${bocata.slug}`} className="rank-item">

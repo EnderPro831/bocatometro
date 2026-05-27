@@ -73,7 +73,7 @@ export default async function HallOfFamePage() {
           gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
           gap: '1.5rem',
         }}>
-{bocatas.map((bocata: any, i) => {
+{bocatas.map((bocata: any, i: number) => {
             const score = Number(bocata.avg_score) || 0
             const medals = ['🥇', '🥈', '🥉']
 

@@ -31,7 +31,7 @@ async function TopRanking() {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
-        {data.map((b, i) => (
+        {data.map((b: any, i: number) => (
           <Link key={b.id} href={`/bocata/${b.slug}`} className="rank-item" style={{ padding: '.8rem 1rem' }}>
             <span style={{ fontFamily: '"Bebas Neue",sans-serif', fontSize: '1.5rem', width: '32px', textAlign: 'center', flexShrink: 0 }}>{medals[i]}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -88,7 +88,7 @@ async function RecentBocatas() {
       {/* Grid 3 cols */}
       {rest.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem' }}>
-          {rest.slice(0, 6).map(b => (
+          {rest.slice(0, 6).map((b: any) => (
             <BocataCard key={b.id} bocata={b as Bocata} />
           ))}
         </div>
