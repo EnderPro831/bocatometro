@@ -258,6 +258,38 @@ h1, h2, h3, h4, h5 { font-family: 'Bebas Neue', sans-serif; letter-spacing: .03e
 
   .alpha-link-active { transition: all .15s; }
   .alpha-link-active:hover { background: var(--red) !important; color: #fff !important; border-color: var(--red) !important; }
+
+  /* ============================================================
+     Responsive / Mobile fixes
+     - Force long text to wrap and avoid overflow
+     - Make media assets responsive
+     - Helper class to stack two-column layouts on small screens
+     ============================================================ */
+
+  p, h1, h2, h3, h4, h5, h6, span, a, li, div {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  img, picture, video, .image-placeholder img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .card, .rank-item, .hof-card-hover, .input-field, .section-heading {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  /* Utility: use on containers that should stack on small screens */
+  .stack-on-mobile {
+    grid-template-columns: 1fr 300px;
+  }
+
+  @media (max-width: 768px) {
+    .stack-on-mobile { grid-template-columns: 1fr !important; }
+    .container-main { padding-left: 1rem; padding-right: 1rem; }
+  }
 }
 
 /* ============================================================

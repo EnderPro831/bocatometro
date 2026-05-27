@@ -106,7 +106,7 @@ export default function HomePage() {
       {/* ── Main content + sidebar ── */}
       <div style={{ borderTop: '1px solid var(--border)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '3rem 2rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '2rem', alignItems: 'start' }}>
+          <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '2rem', alignItems: 'start' }}>
 
             {/* Main */}
             <div>

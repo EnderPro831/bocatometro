@@ -118,7 +118,7 @@ export default async function BocataPage({ params }: PageProps) {
       </div>
 
       {/* Main layout: galería izquierda, scores derecha */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '2rem', marginBottom: '3rem', alignItems: 'start' }}>
+      <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '2rem', marginBottom: '3rem', alignItems: 'start' }}>
 
         {/* Columna izquierda */}
         <div style={{ minWidth: 0 }}>
