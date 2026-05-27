@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { CheckCircle, XCircle, PlusCircle, User, Calendar, MessageCircle } from 'lucide-react'
+import { CheckCircle, XCircle, PlusCircle, Trash2, User, Calendar, MessageCircle } from 'lucide-react'
 import type { Review } from '@/lib/supabase/types'
 import { formatDate, formatPrice } from '@/lib/utils'
 import toast from 'react-hot-toast'
@@ -40,7 +40,7 @@ function SliderInput({ label, emoji, value, onChange }: { label: string; emoji?:
   )
 }
 
-function ReviewCard({ review }: { review: Review }) {
+function ReviewCard({ review, onDelete, deleting }: { review: Review; onDelete?: (id: string) => void; deleting?: boolean }) {
   const score = Number(review.score_total) || 0
   const bg = score >= 8.5 ? 'var(--green)' : score >= 7 ? 'var(--amber)' : 'var(--red)'
   return (
@@ -59,8 +59,23 @@ function ReviewCard({ review }: { review: Review }) {
             </div>
           </div>
         </div>
-        <div style={{ background: bg, color: '#fff', borderRadius: '10px', fontFamily: '"Bebas Neue",sans-serif', fontSize: '1.4rem', padding: '.2rem .6rem', flexShrink: 0, lineHeight: 1.15, letterSpacing: '.03em' }}>
-          {score.toFixed(1)}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '.5rem', flexShrink: 0 }}>
+          <div style={{ background: bg, color: '#fff', borderRadius: '10px', fontFamily: '"Bebas Neue",sans-serif', fontSize: '1.4rem', padding: '.2rem .6rem', lineHeight: 1.15, letterSpacing: '.03em' }}>
+            {score.toFixed(1)}
+          </div>
+          {onDelete && (
+            <button
+              type="button"
+              onClick={() => onDelete(review.id)}
+              disabled={deleting}
+              style={{
+                fontFamily: 'Manrope, sans-serif', fontSize: '.72rem', fontWeight: 700,
+                color: deleting ? 'var(--muted)' : 'var(--red)', background: 'transparent', border: 'none', cursor: deleting ? 'not-allowed' : 'pointer', padding: 0,
+              }}
+            >
+              {deleting ? 'Borrando...' : 'Eliminar review'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -87,10 +102,22 @@ function ReviewCard({ review }: { review: Review }) {
   )
 }
 
+function parseError(e: { code?: string; message?: string } | null): string {
+  if (!e) return 'Error desconocido'
+  const m = e.message || ''
+  const c = e.code || ''
+  if (m.includes('row-level security') || m.includes('policy')) return 'Error de permisos. Inicia sesión o revisa RLS.'
+  if (m.includes('JWT') || c === 'PGRST301') return 'Error de sesión. Recarga la página.'
+  if (m.includes('NetworkError') || m.includes('fetch')) return 'Error de red. Comprueba tu conexión.'
+  return `${m} (${c})`
+}
+
 export default function ReviewSection({ bocataId, bocataName, reviews: init }: ReviewSectionProps) {
   const [reviews, setReviews] = useState<Review[]>(init)
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null)
+  const [supabase] = useState(() => createClient())
   const [form, setForm] = useState({
     author_name: '', title: '', body: '', eaten_at: '', price_paid: '', would_repeat: true,
     score_total: 7.5,
@@ -103,7 +130,6 @@ export default function ReviewSection({ bocataId, bocataName, reviews: init }: R
     e.preventDefault()
     if (!form.author_name.trim() || !form.body.trim()) { toast.error('Nombre y review son obligatorios'); return }
     setLoading(true)
-    const supabase = createClient()
     const { data, error } = await (supabase as any).from('reviews').insert({
       bocata_id: bocataId,
       author_name: form.author_name.trim(),
@@ -121,14 +147,34 @@ export default function ReviewSection({ bocataId, bocataName, reviews: init }: R
       would_repeat: form.would_repeat,
     }).select().single()
 
-    if (error) { toast.error('Error al guardar la review'); console.error(error) }
-    else if (data) {
+    if (error) {
+      toast.error(parseError(error))
+      console.error(error)
+    } else if (data) {
       toast.success('¡Review publicada!')
       setReviews([data as Review, ...reviews])
       setShowForm(false)
       setForm({ author_name: '', title: '', body: '', eaten_at: '', price_paid: '', would_repeat: true, score_total: 7.5 })
     }
+
     setLoading(false)
+  }
+
+  const handleDeleteReview = async (reviewId: string) => {
+    const confirmed = window.confirm('¿Borrar esta review? Esta acción no se puede deshacer.')
+    if (!confirmed) return
+    setDeletingReviewId(reviewId)
+    const { error } = await (supabase as any).from('reviews').delete().eq('id', reviewId)
+
+    if (error) {
+      toast.error(parseError(error))
+      console.error(error)
+    } else {
+      setReviews(prev => prev.filter(review => review.id !== reviewId))
+      toast.success('Review eliminada')
+    }
+
+    setDeletingReviewId(null)
   }
 
   return (
@@ -213,7 +259,14 @@ export default function ReviewSection({ bocataId, bocataName, reviews: init }: R
           <p style={{ fontFamily: 'Lora,serif', fontStyle: 'italic', fontSize: '.85rem', color: 'var(--muted)' }}>Sé el primero en juzgar este bocata.</p>
         </div>
       ) : (
-        <div>{reviews.map(r => <ReviewCard key={r.id} review={r} />)}</div>
+        <div>{reviews.map(r => (
+          <ReviewCard
+            key={r.id}
+            review={r}
+            onDelete={handleDeleteReview}
+            deleting={deletingReviewId === r.id}
+          />
+        ))}</div>
       )}
 
       <style>{`

@@ -69,7 +69,14 @@ export default function Navbar() {
       }}
     >
       <div className="container-main">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: '64px', gap: '2rem' }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'auto 1fr auto',
+          alignItems: 'center',
+          height: '64px',
+          gap: '2rem',
+          position: 'relative',
+        }}>
 
           {/* Logo */}
           <Link
@@ -85,7 +92,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop links */}
-          <nav style={{ display: 'flex', alignItems: 'center', gap: '.15rem', flex: 1, justifyContent: 'center' }}>
+          <nav style={{ display: 'flex', alignItems: 'center', gap: '.15rem', justifySelf: 'center' }}>
             {NAV_LINKS.map(({ href, label }) => {
               const active = pathname === href
               return (

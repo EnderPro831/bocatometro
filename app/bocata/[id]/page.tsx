@@ -66,7 +66,16 @@ export default async function BocataPage({ params }: PageProps) {
         >
           <ArrowLeft size={14} /> Volver al inicio
         </Link>
-        <DeleteButton bocataId={bocata.id} bocataName={bocata.name} imageUrls={allImages} />
+        <div style={{ display: 'flex', gap: '.75rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <Link
+            href={`/bocata/${bocata.slug}/editar`}
+            className="btn-secondary"
+            style={{ fontSize: '.78rem', padding: '.5rem 1rem' }}
+          >
+            Editar bocata
+          </Link>
+          <DeleteButton bocataId={bocata.id} bocataName={bocata.name} imageUrls={allImages} />
+        </div>
       </div>
 
       {/* Header */}

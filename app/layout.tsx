@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Script from 'next/script'
 import { Bebas_Neue, Manrope, Lora } from 'next/font/google'
 import { Toaster } from 'react-hot-toast'
 import './globals.css'
@@ -42,21 +43,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Aplica la clase "dark" al <html> sin esperar a React.
           Esto evita el flash de color incorrecto al cargar.
         */}
-        <script dangerouslySetInnerHTML={{ __html: `
-          (function() {
-            try {
-              var theme = localStorage.getItem('theme');
-              var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-              if (theme === 'dark' || (!theme && prefersDark)) {
-                document.documentElement.classList.add('dark');
-              } else {
-                document.documentElement.classList.remove('dark');
-              }
-            } catch(e) {}
-          })();
-        ` }} />
+        <Script id="theme-init" strategy="beforeInteractive">
+          {`(function() {
+              try {
+                var theme = localStorage.getItem('theme');
+                var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (theme === 'dark' || (!theme && prefersDark)) {
+                  document.documentElement.classList.add('dark');
+                } else {
+                  document.documentElement.classList.remove('dark');
+                }
+              } catch(e) {}
+            })();`}
+        </Script>
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <Navbar />
         <main style={{ minHeight: '100vh', paddingTop: '64px' }}>
           {children}
