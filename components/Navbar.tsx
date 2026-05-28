@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import { Menu, X, Trophy, BookOpen, AlignLeft, PlusCircle, Star, Moon, Sun } from 'lucide-react'
 
 const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'El Bocatómetro'
@@ -18,7 +19,11 @@ export default function Navbar() {
   const [open, setOpen]         = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [dark, setDark]         = useState(false)
+  const [session, setSession]   = useState<any>(null)
+  const [supabase]              = useState(() => createClient())
+  const [userName, setUserName] = useState<string | null>(null)
   const pathname                = usePathname()
+  const router                  = useRouter()
 
   // Leer preferencia inicial
   useEffect(() => {
@@ -37,6 +42,27 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', fn)
   }, [])
 
+  // Authentication state
+  useEffect(() => {
+    let isMounted = true
+    ;(async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!isMounted) return
+      setSession(session)
+      setUserName(session?.user?.email ?? null)
+    })()
+
+    const { data } = supabase.auth.onAuthStateChange((_event: any, authSession: any) => {
+      setSession(authSession)
+      setUserName(authSession?.user?.email ?? null)
+    })
+
+    return () => {
+      isMounted = false
+      data.subscription?.unsubscribe()
+    }
+  }, [supabase])
+
   // Cerrar menú al cambiar de ruta
   useEffect(() => { setOpen(false) }, [pathname])
 
@@ -47,6 +73,17 @@ export default function Navbar() {
     document.documentElement.classList.toggle('dark', next)
     // Persistir
     localStorage.setItem('theme', next ? 'dark' : 'light')
+  }
+
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut()
+    if (error) {
+      alert('No se pudo cerrar sesión. Intenta de nuevo.')
+      console.error(error)
+      return
+    }
+    setSession(null)
+    router.push('/')
   }
 
   const navBg = scrolled
@@ -134,13 +171,27 @@ export default function Navbar() {
             </button>
 
             <Link
-              href="/anadir"
+              href={session ? '/anadir' : '/login?redirect=/anadir'}
               className="btn-primary"
               style={{ padding: '.5rem 1rem', fontSize: '.78rem' }}
             >
               <PlusCircle size={14} />
-              <span>Añadir bocata</span>
+              <span>{session ? 'Añadir bocata' : 'Iniciar sesión'}</span>
             </Link>
+
+            {session ? (
+              <button
+                onClick={handleSignOut}
+                className="btn-secondary"
+                style={{ padding: '.5rem 1rem', fontSize: '.78rem' }}
+              >
+                Cerrar sesión
+              </button>
+            ) : (
+              <Link href="/login" className="btn-secondary" style={{ padding: '.5rem 1rem', fontSize: '.78rem' }}>
+                Iniciar sesión
+              </Link>
+            )}
 
             {/* Mobile hamburger */}
             <button
@@ -194,7 +245,7 @@ export default function Navbar() {
             </Link>
           ))}
           <Link
-            href="/anadir"
+            href={session ? '/anadir' : '/login?redirect=/anadir'}
             style={{
               display: 'flex', alignItems: 'center', gap: '.75rem',
               padding: '.75rem 1rem', borderRadius: '10px',
@@ -205,7 +256,7 @@ export default function Navbar() {
             }}
           >
             <PlusCircle size={17} />
-            Añadir bocata
+            {session ? 'Añadir bocata' : 'Iniciar sesión'}
           </Link>
         </div>
       </div>

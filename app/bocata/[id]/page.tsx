@@ -40,6 +40,10 @@ export default async function BocataPage({ params }: PageProps) {
 
   if (error || !bocata) notFound()
 
+  const { data: { session } } = await supabase.auth.getSession()
+  const currentUserId = session?.user?.id ?? null
+  const currentUserName = session?.user?.email ?? null
+
   const { data: reviews } = await (supabase as any)
     .from('reviews')
     .select('*, comments(*)')
@@ -67,14 +71,18 @@ export default async function BocataPage({ params }: PageProps) {
           <ArrowLeft size={14} /> Volver al inicio
         </Link>
         <div style={{ display: 'flex', gap: '.75rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          <Link
-            href={`/bocata/${bocata.slug}/editar`}
-            className="btn-secondary"
-            style={{ fontSize: '.78rem', padding: '.5rem 1rem' }}
-          >
-            Editar bocata
-          </Link>
-          <DeleteButton bocataId={bocata.id} bocataName={bocata.name} imageUrls={allImages} />
+          {currentUserId === bocata.created_by ? (
+            <>
+              <Link
+                href={`/bocata/${bocata.slug}/editar`}
+                className="btn-secondary"
+                style={{ fontSize: '.78rem', padding: '.5rem 1rem' }}
+              >
+                Editar bocata
+              </Link>
+              <DeleteButton bocataId={bocata.id} bocataName={bocata.name} imageUrls={allImages} />
+            </>
+          ) : null}
         </div>
       </div>
 
@@ -169,6 +177,8 @@ export default async function BocataPage({ params }: PageProps) {
         bocataId={bocata.id}
         bocataName={bocata.name}
         reviews={(reviews as Review[]) || []}
+        currentUserId={currentUserId}
+        currentUserName={currentUserName}
       />
 
       <style>{`

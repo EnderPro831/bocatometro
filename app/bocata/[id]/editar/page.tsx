@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import type { Bocata } from '@/lib/supabase/types'
 import EditBocataForm from './EditBocataForm'
@@ -21,6 +21,15 @@ export default async function EditBocataPage({ params }: PageProps) {
     .single()
 
   if (error || !bocata) notFound()
+
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user?.id) {
+    redirect(`/login?redirect=/bocata/${id}/editar`)
+  }
+
+  if (session.user.id !== bocata.created_by) {
+    notFound()
+  }
 
   return (
     <div style={{ maxWidth: '760px', margin: '0 auto', padding: '3.5rem 2rem 5rem' }}>

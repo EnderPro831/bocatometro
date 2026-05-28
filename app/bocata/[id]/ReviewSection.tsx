@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { CheckCircle, XCircle, PlusCircle, Trash2, User, Calendar, MessageCircle } from 'lucide-react'
 import type { Review } from '@/lib/supabase/types'
@@ -11,6 +12,8 @@ interface ReviewSectionProps {
   bocataId: string
   bocataName: string
   reviews: Review[]
+  currentUserId: string | null
+  currentUserName: string | null
 }
 
 // Use a single overall score instead of multiple categorized sliders
@@ -49,7 +52,7 @@ function ReviewCard({ review, onDelete, deleting }: { review: Review; onDelete?:
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', marginBottom: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '.7rem' }}>
           <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--cream3)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '.78rem', fontWeight: 700, color: 'var(--muted)', flexShrink: 0, fontFamily: 'Manrope,sans-serif' }}>
-            {review.author_name.charAt(0).toUpperCase()}
+            {review.author_name ? review.author_name.charAt(0).toUpperCase() : '?'}
           </div>
           <div>
             <div style={{ fontSize: '.85rem', fontWeight: 600, color: 'var(--ink)', fontFamily: 'Manrope,sans-serif' }}>{review.author_name}</div>
@@ -112,14 +115,14 @@ function parseError(e: { code?: string; message?: string } | null): string {
   return `${m} (${c})`
 }
 
-export default function ReviewSection({ bocataId, bocataName, reviews: init }: ReviewSectionProps) {
+export default function ReviewSection({ bocataId, bocataName, reviews: init, currentUserId, currentUserName }: ReviewSectionProps) {
   const [reviews, setReviews] = useState<Review[]>(init)
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(false)
   const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null)
   const [supabase] = useState(() => createClient())
   const [form, setForm] = useState({
-    author_name: '', title: '', body: '', eaten_at: '', price_paid: '', would_repeat: true,
+    title: '', body: '', eaten_at: '', price_paid: '', would_repeat: true,
     score_total: 7.5,
   })
 
@@ -128,11 +131,16 @@ export default function ReviewSection({ bocataId, bocataName, reviews: init }: R
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.author_name.trim() || !form.body.trim()) { toast.error('Nombre y review son obligatorios'); return }
+    if (!currentUserId || !currentUserName) {
+      toast.error('Necesitas iniciar sesión para publicar una review.')
+      return
+    }
+    if (!form.body.trim()) { toast.error('El texto de la review es obligatorio'); return }
     setLoading(true)
     const { data, error } = await (supabase as any).from('reviews').insert({
       bocata_id: bocataId,
-      author_name: form.author_name.trim(),
+      author_id: currentUserId,
+      author_name: currentUserName,
       title: form.title.trim() || null,
       body: form.body.trim(),
       // store a single overall score; mirror it into category fields so DB aggregations still work
@@ -153,7 +161,7 @@ export default function ReviewSection({ bocataId, bocataName, reviews: init }: R
       toast.success('¡Review publicada!')
       setReviews([data as Review, ...reviews])
       setShowForm(false)
-      setForm({ author_name: '', title: '', body: '', eaten_at: '', price_paid: '', would_repeat: true, score_total: 7.5 })
+      setForm({ title: '', body: '', eaten_at: '', price_paid: '', would_repeat: true, score_total: 7.5 })
     }
 
     setLoading(false)
@@ -188,6 +196,11 @@ export default function ReviewSection({ bocataId, bocataName, reviews: init }: R
           <PlusCircle size={14} /> {showForm ? 'Cancelar' : 'Escribir review'}
         </button>
       </div>
+      {!currentUserId && (
+        <p style={{ fontFamily: 'Manrope, sans-serif', fontSize: '.88rem', color: 'var(--muted)', marginBottom: '1.5rem' }}>
+          Inicia sesión para publicar y administrar tus reviews.
+        </p>
+      )}
 
       {/* Form */}
       {showForm && (
@@ -195,12 +208,9 @@ export default function ReviewSection({ bocataId, bocataName, reviews: init }: R
           <h3 style={{ fontFamily: '"Bebas Neue",sans-serif', fontSize: '1.5rem', letterSpacing: '.03em', marginBottom: '1.5rem', color: 'var(--ink)' }}>
             Tu veredicto sobre <span style={{ color: 'var(--red)' }}>{bocataName}</span>
           </h3>
-          <form onSubmit={handleSubmit}>
+          {currentUserId ? (
+            <form onSubmit={handleSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-              <div>
-                <label className="input-label">Tu nombre *</label>
-                <input className="input-field" type="text" placeholder="Pepe el Tragaldabas" value={form.author_name} onChange={e => setForm({ ...form, author_name: e.target.value })} required />
-              </div>
               <div>
                 <label className="input-label">Título de la review</label>
                 <input className="input-field" type="text" placeholder="Una experiencia mística" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
@@ -247,6 +257,16 @@ export default function ReviewSection({ bocataId, bocataName, reviews: init }: R
               {loading ? 'Publicando veredicto...' : '🥖 Publicar review'}
             </button>
           </form>
+          ) : (
+            <div style={{ padding: '2rem', background: 'var(--cream2)', borderRadius: '16px', display: 'grid', gap: '.8rem' }}>
+              <p style={{ margin: 0, fontFamily: 'Manrope, sans-serif', fontSize: '.95rem', color: 'var(--muted)' }}>
+                Debes iniciar sesión para publicar una review.
+              </p>
+              <Link href={`/login?redirect=/bocata/${bocataId}`} className="btn-primary" style={{ width: 'fit-content' }}>
+                Iniciar sesión
+              </Link>
+            </div>
+          )}
         </div>
       )}
 
@@ -262,7 +282,7 @@ export default function ReviewSection({ bocataId, bocataName, reviews: init }: R
           <ReviewCard
             key={r.id}
             review={r}
-            onDelete={handleDeleteReview}
+            onDelete={r.author_id === currentUserId ? handleDeleteReview : undefined}
             deleting={deletingReviewId === r.id}
           />
         ))}</div>

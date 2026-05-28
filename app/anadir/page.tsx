@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useDropzone } from 'react-dropzone'
 import Image from 'next/image'
@@ -36,6 +36,8 @@ export default function AnadirPage() {
   const [loading, setLoading]   = useState(false)
   const [uploading, setUploading] = useState(false)
   const [images, setImages]     = useState<string[]>([])
+  const [user, setUser]         = useState<any>(null)
+  const [authLoading, setAuthLoading] = useState(true)
   // tags removed — no longer used
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [form, setForm] = useState({
@@ -91,8 +93,42 @@ export default function AnadirPage() {
     maxSize: 5 * 1024 * 1024,
   })
 
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!mounted) return
+      if (!session?.user?.id) {
+        router.push('/login?redirect=/anadir')
+        return
+      }
+      setUser(session.user)
+      setAuthLoading(false)
+    })()
+
+    const { data } = supabase.auth.onAuthStateChange((_event: any, authSession: any) => {
+      if (!authSession?.user?.id) {
+        router.push('/login?redirect=/anadir')
+        return
+      }
+      setUser(authSession.user)
+      setAuthLoading(false)
+    })
+
+    return () => {
+      mounted = false
+      data.subscription?.unsubscribe()
+    }
+  }, [router, supabase])
+
   // ── Guardar ───────────────────────────────────────────────
   const handleSubmit = async () => {
+    if (!user) {
+      alert('Necesitas iniciar sesión para publicar un bocata.')
+      router.push('/login?redirect=/anadir')
+      return
+    }
+
     if (!form.name.trim()) { toast.error('El nombre es obligatorio'); return }
     setLoading(true)
 
@@ -109,7 +145,7 @@ export default function AnadirPage() {
       images:          images.slice(1),
       tags:             [],
       is_hall_of_fame:  false,
-      created_by:       null,
+      created_by:       user.id,
     }
 
     const { data, error } = await (supabase as any)
@@ -129,7 +165,14 @@ export default function AnadirPage() {
     router.push(`/bocata/${data.slug}`)
   }
 
-  // ── Render ────────────────────────────────────────────────
+  // ── Render ───────────────────────────────────────────────
+  if (authLoading) {
+    return (
+      <div style={{ maxWidth: '680px', margin: '0 auto', padding: '4rem 2rem' }}>
+        <p style={{ color: 'var(--muted)', fontSize: '1rem' }}>Cargando sesión…</p>
+      </div>
+    )
+  }
   return (
     <div style={{ maxWidth: '680px', margin: '0 auto', padding: '3.5rem 2rem 5rem' }}>
 
